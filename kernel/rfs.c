@@ -492,13 +492,10 @@ struct vinode *rfs_create(struct vinode *parent, struct dentry *sub_dentry) {
   // nlinks, i.e., the number of links.
   // blocks, i.e., its block count.
   // Note: DO NOT DELETE CODE BELOW PANIC.
-
   free_dinode->size = 0; // 初始化大小为 0
   free_dinode->type = R_FILE; // 根据 rfs.h 设置文件类型
   free_dinode->nlinks = 1; // 链接数初始化为 1
   free_dinode->blocks = 0; // 块数初始化为 0
-
-
 
   // DO NOT REMOVE ANY CODE BELOW.
   // allocate a free block for the file
@@ -652,7 +649,11 @@ int rfs_readdir(struct vinode *dir_vinode, struct dir *dir, int *offset) {
   // the method of returning is to popular proper members of "dir", more specifically,
   // dir->name and dir->inum.
   // note: DO NOT DELETE CODE BELOW PANIC.
-  panic("You need to implement the code for reading a directory entry of rfs in lab4_2.\n" );
+
+  dir->inum = p_direntry->inum;
+  strcpy(dir->name, p_direntry->name);
+
+  // panic("You need to implement the code for reading a directory entry of rfs in lab4_2.\n" );
 
   // DO NOT DELETE CODE BELOW.
   (*offset)++;
