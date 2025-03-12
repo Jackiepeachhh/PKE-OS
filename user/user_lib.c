@@ -63,3 +63,4 @@ void* naive_malloc() {
 void naive_free(void* va) {
   do_user_call(SYS_user_free_page, (uint64)va, 0, 0, 0, 0, 0, 0);
 }
+
