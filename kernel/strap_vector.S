@@ -1,3 +1,4 @@
+
 .section trapsec
 .globl trap_sec_start
 trap_sec_start:
