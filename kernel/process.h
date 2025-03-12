@@ -1,3 +1,4 @@
+
 #ifndef _PROC_H_
 #define _PROC_H_
 
@@ -35,3 +36,4 @@ void switch_to(process*);
 extern process* current;
 
 #endif
+
