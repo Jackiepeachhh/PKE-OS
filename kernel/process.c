@@ -235,14 +235,17 @@ int do_fork( process* parent)
         // address region of child to the physical pages that actually store the code
         // segment of parent process.
         // DO NOT COPY THE PHYSICAL PAGES, JUST MAP THEM.
-        panic( "You need to implement the code segment mapping of child in lab3_1.\n" );
-
-        // after mapping, register the vm region (do not delete codes below!)
-        child->mapped_info[child->total_mapped_region].va = parent->mapped_info[i].va;
-        child->mapped_info[child->total_mapped_region].npages =
-          parent->mapped_info[i].npages;
-        child->mapped_info[child->total_mapped_region].seg_type = CODE_SEGMENT;
-        child->total_mapped_region++;
+         //映射，子进程的页表 (child->pagetable) 映射到父进程的代码段内存页
+         //实现 代码段内存共享
+         user_vm_map((pagetable_t)child -> pagetable, parent -> mapped_info[CODE_SEGMENT].va, PGSIZE, lookup_pa(parent -> pagetable, parent -> mapped_info[CODE_SEGMENT].va), prot_to_type(PROT_EXEC | PROT_READ, 1));
+ 
+ 
+         // after mapping, register the vm region (do not delete codes below!)
+         child->mapped_info[child->total_mapped_region].va = parent->mapped_info[i].va;
+         child->mapped_info[child->total_mapped_region].npages =
+           parent->mapped_info[i].npages;
+         child->mapped_info[child->total_mapped_region].seg_type = CODE_SEGMENT;
+         child->total_mapped_region++;
         break;
     }
   }
