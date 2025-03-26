@@ -11,7 +11,7 @@
  #include "util/functions.h"
  
  #include "spike_interface/spike_utils.h"
- 
+ #include "memlayout.h"
  //
  // handling the syscalls. will call do_syscall() defined in kernel/syscall.c
  //
@@ -40,7 +40,7 @@
  
  //
  // global variable that store the recorded "ticks". added @lab1_3
- static uint64 g_ticks = 0;
+ static uint64 g_ticks[NCPU] = {0};
  //
  // added @lab1_3
  //
@@ -49,7 +49,7 @@
    // TODO (lab1_3): increase g_ticks to record this "tick", and then clear the "SIP"
    // field in sip register.
    // hint: use write_csr to disable the SIP_SSIP bit in sip.
-   g_ticks += 1;
+   g_ticks[read_tp()] += 1;
    write_csr(sip, 0L << 1); //意图针对第1位SSIP位，设置第1位为0（其实其他位也为0）
  
  }
@@ -68,7 +68,7 @@
        // hint: first allocate a new physical page, and then, maps the new page to the
        // virtual address that causes the page fault.
         
-       map_pages(current->pagetable, ROUNDDOWN(stval, PGSIZE), PGSIZE, (uint64)alloc_page(), prot_to_type(PROT_WRITE | PROT_READ, 1));
+       map_pages(current[read_tp()]->pagetable, ROUNDDOWN(stval, PGSIZE), PGSIZE, (uint64)alloc_page(), prot_to_type(PROT_WRITE | PROT_READ, 1));
        
        break;
      default:
@@ -86,9 +86,9 @@
    // we will consider other previous case in lab1_3 (interrupt).
    if ((read_csr(sstatus) & SSTATUS_SPP) != 0) panic("usertrap: not from user mode");
  
-   assert(current);
+   assert(current[read_tp()]);
    // save user process counter.
-   current->trapframe->epc = read_csr(sepc);
+   current[read_tp()]->trapframe->epc = read_csr(sepc);
  
    // if the cause of trap is syscall from user application.
    // read_csr() and CAUSE_USER_ECALL are macros defined in kernel/riscv.h
@@ -97,7 +97,7 @@
    // use switch-case instead of if-else, as there are many cases since lab2_3.
    switch (cause) {
      case CAUSE_USER_ECALL:
-       handle_syscall(current->trapframe);
+       handle_syscall(current[read_tp()]->trapframe);
        break;
      case CAUSE_MTIMER_S_TRAP:
        handle_mtimer_trap();
@@ -116,6 +116,6 @@
    }
  
    // continue (come back to) the execution of current process.
-   switch_to(current);
+   switch_to(current[read_tp()]);
  }
  

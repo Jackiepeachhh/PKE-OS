@@ -6,6 +6,8 @@
 #include "memlayout.h"
 #include "spike_interface/spike_utils.h"
 
+#include "kernel/sync_utils.h"
+
 // _end is defined in kernel/kernel.lds, it marks the ending (virtual) address of PKE kernel
 extern char _end[];
 // g_mem_size is defined in spike_interface/spike_memory.c, it indicates the size of our
@@ -14,6 +16,8 @@ extern uint64 g_mem_size;
 
 static uint64 free_mem_start_addr;  //beginning address of free memory
 static uint64 free_mem_end_addr;    //end address of free memory (not included)
+
+volatile int free_page_lock = 0;
 
 int vm_alloc_stage[NCPU] = { 0 }; // 0 for kernel alloc, 1 for user alloc
 typedef struct node {
@@ -40,10 +44,12 @@ void free_page(void *pa) {
   if (((uint64)pa % PGSIZE) != 0 || (uint64)pa < free_mem_start_addr || (uint64)pa >= free_mem_end_addr)
     panic("free_page 0x%lx \n", pa);
 
+  sync_acquirelock(&free_page_lock);
   // insert a physical page to g_free_mem_list
   list_node *n = (list_node *)pa;
   n->next = g_free_mem_list.next;
   g_free_mem_list.next = n;
+  sync_releaselock(&free_page_lock);
 }
 
 //
@@ -51,12 +57,14 @@ void free_page(void *pa) {
 // Allocates only ONE page!
 //
 void *alloc_page(void) {
+  sync_acquirelock(&free_page_lock);
   list_node *n = g_free_mem_list.next;
-  uint64 hartid = 0;
+  uint64 hartid = read_tp();
   if (vm_alloc_stage[hartid]) {
-    sprint("hartid = %ld: alloc page 0x%x\n", hartid, n);
+    sprint("hartid = %d: alloc page 0x%x\n", hartid, n);
   }
   if (n) g_free_mem_list.next = n->next;
+  sync_releaselock(&free_page_lock);
   return (void *)n;
 }
 
