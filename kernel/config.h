@@ -12,12 +12,12 @@
 /* we use fixed physical (also logical) addresses for the stacks and trap frames as in
  Bare memory-mapping mode */
 // user stack top
-#define USER_STACK 0x81100000
+#define USER_STACK(hart_id) 0x81100000 + 0x300000 * hart_id
 
 // the stack used by PKE kernel when a syscall happens
-#define USER_KSTACK 0x81200000
+#define USER_KSTACK(hart_id) 0x81200000 + 0x300000 * hart_id
 
 // the trap frame used to assemble the user "process"
-#define USER_TRAP_FRAME 0x81300000
+#define USER_TRAP_FRAME(hart_id) 0x81300000 + 0x300000 * hart_id
 
 #endif
