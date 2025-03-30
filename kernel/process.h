@@ -1,3 +1,4 @@
+
 #ifndef _PROC_H_
 #define _PROC_H_
 
@@ -103,7 +104,14 @@ int free_process( process* proc );
 // fork a child from parent
 int do_fork(process* parent);
 
+int do_semnew(int init_value);
+ 
+void do_semP(int sem_index);
+ 
+void do_semV(int sem_index);
+
 // current running process
 extern process* current;
 
 #endif
+

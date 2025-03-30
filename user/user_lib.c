@@ -64,6 +64,7 @@ void naive_free(void* va) {
   do_user_call(SYS_user_free_page, (uint64)va, 0, 0, 0, 0, 0, 0);
 }
 
+
 //
 // lib call to naive_fork
 int fork() {
@@ -75,4 +76,15 @@ int fork() {
 //
 void yield() {
   do_user_call(SYS_user_yield, 0, 0, 0, 0, 0, 0, 0);
+}
+
+int sem_new(int init_value) {
+  return do_user_call(SYS_user_semnew, init_value, 0, 0, 0, 0, 0, 0);
+}
+
+void sem_P(int sem_index) {
+  do_user_call(SYS_user_semP, sem_index, 0, 0, 0, 0, 0, 0);
+}
+void sem_V(int sem_index) {
+  do_user_call(SYS_user_semV, sem_index, 0, 0, 0, 0, 0, 0);
 }
