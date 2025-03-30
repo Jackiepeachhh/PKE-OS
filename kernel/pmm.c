@@ -19,6 +19,7 @@ typedef struct node {
   struct node *next;
 } list_node;
 
+int page_ref[PHYS_TOP/PGSIZE];
 // g_free_mem_list is the head of the list of free physical memory pages
 static list_node g_free_mem_list;
 
@@ -28,8 +29,10 @@ static list_node g_free_mem_list;
 //
 static void create_freepage_list(uint64 start, uint64 end) {
   g_free_mem_list.next = 0;
-  for (uint64 p = ROUNDUP(start, PGSIZE); p + PGSIZE < end; p += PGSIZE)
+  for (uint64 p = ROUNDUP(start, PGSIZE); p + PGSIZE < end; p += PGSIZE){
     free_page( (void *)p );
+    page_ref[(uint64)p / PGSIZE] = 0;
+  }
 }
 
 //
@@ -38,7 +41,8 @@ static void create_freepage_list(uint64 start, uint64 end) {
 void free_page(void *pa) {
   if (((uint64)pa % PGSIZE) != 0 || (uint64)pa < free_mem_start_addr || (uint64)pa >= free_mem_end_addr)
     panic("free_page 0x%lx \n", pa);
-
+  page_ref[(uint64)pa / PGSIZE] --;
+  if(page_ref[(uint64)pa / PGSIZE] > 0) return;
   // insert a physical page to g_free_mem_list
   list_node *n = (list_node *)pa;
   n->next = g_free_mem_list.next;
@@ -52,7 +56,7 @@ void free_page(void *pa) {
 void *alloc_page(void) {
   list_node *n = g_free_mem_list.next;
   if (n) g_free_mem_list.next = n->next;
-
+  page_ref[(uint64)n / PGSIZE] = 1;
   return (void *)n;
 }
 
