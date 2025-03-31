@@ -73,7 +73,7 @@
  
        break;
      default:
-       sprint("unknown page fault.\n");
+       panic("unknown page fault.\n");
        break;
    }
  }

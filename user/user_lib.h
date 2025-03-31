@@ -13,6 +13,9 @@ void* naive_malloc();
 void naive_free(void* va);
 int fork();
 void yield();
+int wait(int pid);
+int exec(const char *fn, const char *para);
+
 
 // added @ lab4_1
 int open(const char *pathname, int flags);

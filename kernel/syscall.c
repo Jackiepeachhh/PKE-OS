@@ -17,6 +17,7 @@
 
 #include "spike_interface/spike_utils.h"
 
+extern process procs[NPROC];
 //
 // implement the SYS_user_print syscall
 //
@@ -36,6 +37,11 @@ ssize_t sys_user_exit(uint64 code) {
   sprint("User exit with code:%d.\n", code);
   // reclaim the current process, and reschedule. added @lab3_1
   free_process( current );
+  for( int i=NPROC; i>=0; i-- )
+  if( procs[i].status == BLOCKED && current->parent == &procs[i]){
+    procs[i].status = READY;
+    insert_to_ready_queue( &procs[i] );
+  }
   schedule();
   return 0;
 }
@@ -100,6 +106,35 @@ ssize_t sys_user_yield() {
 
   return 0;
 }
+
+ssize_t sys_user_wait(uint64 pid) {
+  process* parent = current;
+  if(pid == -1){
+    //wait any child process exit and return its pid
+      for (int i = 0; i < NPROC; ++i) {
+        if(procs[i].status == ZOMBIE && procs[i].parent == parent){
+          return i;
+          }
+      }
+      //sprint("wait for any process\n");
+      parent->status = BLOCKED;
+      schedule();
+    
+  }else if(pid > 0){
+    //wait the child process exit and return its pid
+    if(procs[pid].parent == parent){
+          if(procs[pid].status == ZOMBIE){
+            return pid;
+          }
+          //sprint("wait for process %d\n",pid);
+          parent->status = BLOCKED;
+          schedule();
+    }
+    else return -1;
+  }
+  return -1;
+}
+
 
 //
 // open file
@@ -219,6 +254,13 @@ ssize_t sys_user_unlink(char * vfn){
   return do_unlink(pfn);
 }
 
+ssize_t sys_user_exec(char * fn, char * para){
+  char* fn_pa = (char*)user_va_to_pa((pagetable_t)(current->pagetable), fn);
+  char* para_pa = (char*)user_va_to_pa((pagetable_t)(current->pagetable), para);
+  do_exec(fn_pa, para_pa);
+  return -1;
+}
+
 //
 // [a0]: the syscall number; [a1] ... [a7]: arguments to the syscalls.
 // returns the code of success, (e.g., 0 means success, fail for otherwise)
@@ -238,6 +280,8 @@ long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, long a6, l
       return sys_user_fork();
     case SYS_user_yield:
       return sys_user_yield();
+    case SYS_user_wait:
+      return sys_user_wait(a1);
     // added @lab4_1
     case SYS_user_open:
       return sys_user_open((char *)a1, a2);
@@ -267,6 +311,8 @@ long do_syscall(long a0, long a1, long a2, long a3, long a4, long a5, long a6, l
       return sys_user_link((char *)a1, (char *)a2);
     case SYS_user_unlink:
       return sys_user_unlink((char *)a1);
+    case SYS_user_exec:
+      return sys_user_exec((char *)a1, (char *)a2);
     default:
       panic("Unknown syscall %ld \n", a0);
   }
