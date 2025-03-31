@@ -2,6 +2,8 @@
 #include "kernel/process.h"
 #include "spike_interface/spike_utils.h"
 
+#include "util/string.h"
+
 static void handle_instruction_access_fault() { panic("Instruction access fault!"); }
 
 static void handle_load_access_fault() { panic("Load access fault!"); }
@@ -44,7 +46,45 @@ void handle_mtrap() {
     case CAUSE_ILLEGAL_INSTRUCTION:
       // TODO (lab1_2): call handle_illegal_instruction to implement illegal instruction
       // interception, and finish lab1_2.
-      handle_illegal_instruction();
+
+      // errorline print
+      {
+        uint64 mepc = read_csr(mepc);
+        for(int i = 0; i < current->line_ind; i ++)
+          if(current->line[i].addr == mepc)
+          {
+            // read line、file、dir array and print
+            int lnum = current->line[i].line;
+            int findex = current->line[i].file;
+            int dindex = current->file[findex].dir;
+            sprint("Runtime error at %s/%s:%d\n", (char *)(current->dir)[dindex], current->file[findex].file, lnum);
+
+            // open source code file
+            char filename[100];
+            strcpy(filename, (char *)(current->dir)[dindex]);
+            filename[strlen((char *)(current->dir)[dindex])] = '/';
+            strcpy(filename + strlen((char *)(current->dir)[dindex]) + 1, current->file[findex].file);
+            spike_file_t* f = spike_file_open(filename, O_RDONLY, 0);
+
+            // print source code file error line
+            char source_code_string[1000];
+            lnum --;
+            spike_file_read(f, source_code_string, sizeof source_code_string);
+            char * p = source_code_string;
+            while(*(p ++))
+            {
+              if(*p == '\n' && lnum) lnum --;
+              else if(lnum == 0)
+              {
+                while(*(p) != '\n') sprint("%c", *(p++));
+                sprint("\n");
+                break;
+              }
+            }
+            break;
+          }
+        handle_illegal_instruction();
+      }
 
       break;
     case CAUSE_MISALIGNED_LOAD:
