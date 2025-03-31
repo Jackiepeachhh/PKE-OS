@@ -494,7 +494,11 @@ struct vinode *rfs_create(struct vinode *parent, struct dentry *sub_dentry) {
   // nlinks, i.e., the number of links.
   // blocks, i.e., its block count.
   // Note: DO NOT DELETE CODE BELOW PANIC.
-  panic("You need to implement the code of populating a disk inode in lab4_1.\n" );
+
+  free_dinode->size = 0; // 初始化大小为 0
+  free_dinode->type = R_FILE; // 根据 rfs.h 设置文件类型
+  free_dinode->nlinks = 1; // 链接数初始化为 1
+  free_dinode->blocks = 0; // 块数初始化为 0
 
   // DO NOT REMOVE ANY CODE BELOW.
   // allocate a free block for the file
@@ -591,7 +595,24 @@ int rfs_link(struct vinode *parent, struct dentry *sub_dentry, struct vinode *li
   //    rfs_add_direntry here.
   // 3) persistent the changes to disk. you can use rfs_write_back_vinode here.
   //
-  panic("You need to implement the code for creating a hard link in lab4_3.\n" );
+
+  //增加目标文件的硬链接计数
+  sub_dentry->dentry_inode->nlinks++;
+  //在父目录中添加一个新的目录项，指向目标文件的 inode
+  if(rfs_add_direntry(parent, sub_dentry->name, sub_dentry->dentry_inode->inum) == -1)
+  {
+    sprint("rfs_link: rfs_add_direntry failed");
+    return -1;
+  }
+  //将更改持久化到磁盘
+  if(rfs_write_back_vinode(sub_dentry->dentry_inode) != 0)
+  {
+    sprint("rfs_link: rfs_write_back_vino failed");
+    return -1;
+  }
+  return 0;
+
+  // panic("You need to implement the code for creating a hard link in lab4_3.\n" );
 }
 
 //
@@ -787,7 +808,9 @@ int rfs_readdir(struct vinode *dir_vinode, struct dir *dir, int *offset) {
   // the method of returning is to popular proper members of "dir", more specifically,
   // dir->name and dir->inum.
   // note: DO NOT DELETE CODE BELOW PANIC.
-  panic("You need to implement the code for reading a directory entry of rfs in lab4_2.\n" );
+
+  dir->inum = p_direntry->inum;
+  strcpy(dir->name, p_direntry->name);
 
   // DO NOT DELETE CODE BELOW.
   (*offset)++;
